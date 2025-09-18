@@ -1,9 +1,8 @@
 
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { colors, commonStyles, buttonStyles } from '../styles/commonStyles';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Platform } from 'react-native';
+import { colors, commonStyles, buttonStyles } from '../styles/commonStyles';
 
 interface AddEventFormProps {
   onAddEvent: (event: {
@@ -14,26 +13,28 @@ interface AddEventFormProps {
     color: string;
   }) => void;
   onClose: () => void;
+  selectedDate?: string;
 }
 
 const eventColors = [
-  colors.primary,
-  colors.secondary,
-  colors.accent,
-  colors.success,
-  colors.warning,
+  { name: 'Blau', value: colors.primary },
+  { name: 'Grün', value: colors.secondary },
+  { name: 'Orange', value: colors.accent },
+  { name: 'Rot', value: colors.danger },
+  { name: 'Lila', value: '#8B5CF6' },
+  { name: 'Rosa', value: '#EC4899' },
 ];
 
-export default function AddEventForm({ onAddEvent, onClose }: AddEventFormProps) {
+export default function AddEventForm({ onAddEvent, onClose, selectedDate }: AddEventFormProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [date, setDate] = useState(new Date());
+  const [date, setDate] = useState(selectedDate ? new Date(selectedDate) : new Date());
   const [time, setTime] = useState(new Date());
-  const [selectedColor, setSelectedColor] = useState(eventColors[0]);
+  const [selectedColor, setSelectedColor] = useState(colors.primary);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
 
-  console.log('AddEventForm rendered');
+  console.log('AddEventForm rendered with selectedDate:', selectedDate);
 
   const handleSubmit = () => {
     if (!title.trim()) {
@@ -44,7 +45,10 @@ export default function AddEventForm({ onAddEvent, onClose }: AddEventFormProps)
     const event = {
       title: title.trim(),
       date: date.toISOString().split('T')[0],
-      time: time.toTimeString().slice(0, 5),
+      time: time.toLocaleTimeString('de-DE', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      }),
       description: description.trim() || undefined,
       color: selectedColor,
     };
@@ -58,6 +62,7 @@ export default function AddEventForm({ onAddEvent, onClose }: AddEventFormProps)
     setShowDatePicker(Platform.OS === 'ios');
     if (selectedDate) {
       setDate(selectedDate);
+      console.log('Date changed to:', selectedDate.toISOString().split('T')[0]);
     }
   };
 
@@ -65,67 +70,85 @@ export default function AddEventForm({ onAddEvent, onClose }: AddEventFormProps)
     setShowTimePicker(Platform.OS === 'ios');
     if (selectedTime) {
       setTime(selectedTime);
+      console.log('Time changed to:', selectedTime.toLocaleTimeString());
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={commonStyles.subtitle}>Neuer Termin</Text>
+      <Text style={styles.title}>Neuer Termin</Text>
 
-      <TextInput
-        style={commonStyles.input}
-        placeholder="Titel des Termins"
-        placeholderTextColor={colors.textSecondary}
-        value={title}
-        onChangeText={setTitle}
-        autoFocus
-      />
-
-      <TextInput
-        style={[commonStyles.input, styles.descriptionInput]}
-        placeholder="Beschreibung (optional)"
-        placeholderTextColor={colors.textSecondary}
-        value={description}
-        onChangeText={setDescription}
-        multiline
-        numberOfLines={3}
-      />
-
-      <View style={styles.dateTimeContainer}>
-        <TouchableOpacity
-          style={styles.dateTimeButton}
-          onPress={() => setShowDatePicker(true)}
-        >
-          <Text style={styles.dateTimeLabel}>Datum</Text>
-          <Text style={styles.dateTimeValue}>
-            {date.toLocaleDateString('de-DE')}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.dateTimeButton}
-          onPress={() => setShowTimePicker(true)}
-        >
-          <Text style={styles.dateTimeLabel}>Zeit</Text>
-          <Text style={styles.dateTimeValue}>
-            {time.toTimeString().slice(0, 5)}
-          </Text>
-        </TouchableOpacity>
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Titel *</Text>
+        <TextInput
+          style={styles.input}
+          value={title}
+          onChangeText={setTitle}
+          placeholder="z.B. Zahnarzttermin"
+          placeholderTextColor={colors.grey}
+        />
       </View>
 
-      <Text style={styles.colorLabel}>Farbe wählen</Text>
-      <View style={styles.colorContainer}>
-        {eventColors.map((color, index) => (
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Beschreibung</Text>
+        <TextInput
+          style={[styles.input, styles.textArea]}
+          value={description}
+          onChangeText={setDescription}
+          placeholder="Zusätzliche Details..."
+          placeholderTextColor={colors.grey}
+          multiline
+          numberOfLines={3}
+        />
+      </View>
+
+      <View style={commonStyles.row}>
+        <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+          <Text style={styles.label}>Datum</Text>
           <TouchableOpacity
-            key={index}
-            style={[
-              styles.colorOption,
-              { backgroundColor: color },
-              selectedColor === color && styles.selectedColor
-            ]}
-            onPress={() => setSelectedColor(color)}
-          />
-        ))}
+            style={styles.dateTimeButton}
+            onPress={() => setShowDatePicker(true)}
+          >
+            <Text style={styles.dateTimeText}>
+              {date.toLocaleDateString('de-DE')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
+          <Text style={styles.label}>Uhrzeit</Text>
+          <TouchableOpacity
+            style={styles.dateTimeButton}
+            onPress={() => setShowTimePicker(true)}
+          >
+            <Text style={styles.dateTimeText}>
+              {time.toLocaleTimeString('de-DE', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+              })}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Farbe</Text>
+        <View style={styles.colorPicker}>
+          {eventColors.map((color) => (
+            <TouchableOpacity
+              key={color.value}
+              style={[
+                styles.colorOption,
+                { backgroundColor: color.value },
+                selectedColor === color.value && styles.selectedColor,
+              ]}
+              onPress={() => {
+                setSelectedColor(color.value);
+                console.log('Color selected:', color.name);
+              }}
+            />
+          ))}
+        </View>
       </View>
 
       <View style={styles.buttonContainer}>
@@ -133,18 +156,14 @@ export default function AddEventForm({ onAddEvent, onClose }: AddEventFormProps)
           style={[buttonStyles.secondary, { flex: 1, marginRight: 8 }]}
           onPress={onClose}
         >
-          <Text style={[commonStyles.text, { color: colors.textSecondary }]}>
-            Abbrechen
-          </Text>
+          <Text style={buttonStyles.secondaryText}>Abbrechen</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[buttonStyles.primary, { flex: 1, marginLeft: 8 }]}
           onPress={handleSubmit}
         >
-          <Text style={[commonStyles.text, { color: colors.backgroundAlt }]}>
-            Hinzufügen
-          </Text>
+          <Text style={buttonStyles.primaryText}>Hinzufügen</Text>
         </TouchableOpacity>
       </View>
 
@@ -173,45 +192,50 @@ const styles = StyleSheet.create({
   container: {
     padding: 20,
   },
-  descriptionInput: {
-    height: 80,
-    textAlignVertical: 'top',
+  title: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 24,
+    textAlign: 'center',
   },
-  dateTimeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  inputGroup: {
     marginBottom: 20,
   },
-  dateTimeButton: {
-    flex: 1,
-    backgroundColor: colors.backgroundAlt,
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 8,
+  },
+  input: {
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 12,
     padding: 16,
-    marginHorizontal: 4,
-    alignItems: 'center',
-  },
-  dateTimeLabel: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginBottom: 4,
-  },
-  dateTimeValue: {
     fontSize: 16,
     color: colors.text,
-    fontWeight: '500',
+    backgroundColor: colors.backgroundAlt,
   },
-  colorLabel: {
+  textArea: {
+    height: 80,
+    textAlignVertical: 'top',
+  },
+  dateTimeButton: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: 16,
+    backgroundColor: colors.backgroundAlt,
+  },
+  dateTimeText: {
     fontSize: 16,
-    fontWeight: '500',
     color: colors.text,
-    marginBottom: 12,
   },
-  colorContainer: {
+  colorPicker: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 24,
+    flexWrap: 'wrap',
+    gap: 12,
   },
   colorOption: {
     width: 40,
@@ -225,6 +249,6 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     flexDirection: 'row',
-    marginTop: 20,
+    marginTop: 24,
   },
 });
